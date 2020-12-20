@@ -2,7 +2,9 @@ package main
 
 import (
 	"encoding/gob"
+	"flag"
 	"html/template"
+	"log"
 	"net/http"
 
 	"github.com/gorilla/mux"
@@ -12,6 +14,7 @@ import (
 	"github.com/AJ2O/golang-notetaker/registration"
 )
 
+// LoggedInUser contains the currently active account's information.
 type LoggedInUser struct {
 	Username      string
 	Authenticated bool
@@ -46,19 +49,20 @@ func isAuthenticated(w http.ResponseWriter, r *http.Request, session *sessions.S
 	// session needs to be passed in from calling function here
 	user := getUser(session)
 
+	// TODO: Check if user exists in the users database
+
 	// Check if the user is not authenticated
-	if auth := user.Authenticated; !auth {
-		http.Error(w, "Forbidden", http.StatusForbidden)
-		return false
-	}
-	return true
+	return user.Authenticated
 }
 
 func redirectToHome(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
 func goToHomePage(w http.ResponseWriter, r *http.Request) {
-	allNotes, _ := notes.ReadAllNotes(w, r)
+	session, _ := cookies.Get(r, appCookie)
+	user := getUser(session)
+
+	allNotes, _ := notes.ReadAllNotes(user.Username)
 	tmpl := template.Must(template.ParseFiles(homePage))
 	tmpl.Execute(w, notes.NotePage{Notes: allNotes})
 }
@@ -67,10 +71,9 @@ func setupRoutes(r *mux.Router) {
 	// Home
 	r.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		session, _ := cookies.Get(r, appCookie)
-		user := getUser(session)
 
 		// Go to notes list
-		if user.Authenticated {
+		if isAuthenticated(w, r, session) {
 			createNoteValue := r.FormValue("createnote")
 			logoutValue := r.FormValue("logout")
 
@@ -123,6 +126,7 @@ func setupRoutes(r *mux.Router) {
 				auth = false
 				http.Redirect(w, r, "/login", http.StatusSeeOther)
 			} else {
+
 				// Go to registration page
 				auth = false
 				tmpl := template.Must(template.ParseFiles(registerPage))
@@ -147,6 +151,7 @@ func setupRoutes(r *mux.Router) {
 			registerValue := r.FormValue("register")
 			loginValue := r.FormValue("login")
 
+			// Login action
 			if loginValue != "" {
 				err := registration.Login(w, r)
 				if err != nil {
@@ -164,11 +169,14 @@ func setupRoutes(r *mux.Router) {
 					session.Values["user"] = user
 					session.Save(r, w)
 				}
+
 			} else if registerValue != "" {
+				// Register action
 				auth = false
 				http.Redirect(w, r, "/register", http.StatusSeeOther)
+
 			} else {
-				// Go to registration page
+				// Go to login page
 				auth = false
 				tmpl := template.Must(template.ParseFiles(loginPage))
 				tmpl.Execute(w, nil)
@@ -199,14 +207,21 @@ func setupRoutes(r *mux.Router) {
 			createValue := r.FormValue("create")
 			backValue := r.FormValue("back")
 
+			// Create action
 			if createValue != "" {
-				err := notes.CreateNote(w, r)
+				err := notes.CreateNote(user.Username, r.FormValue("note"))
 				if err == nil {
 					redirectToHome(w, r)
+				} else {
+					log.Println(err.Error())
 				}
+
 			} else if backValue != "" {
+				// Back action
 				redirectToHome(w, r)
+
 			} else {
+				// Load page action
 				tmpl := template.Must(template.ParseFiles(createNotePage))
 				tmpl.Execute(w, nil)
 			}
@@ -221,22 +236,43 @@ func setupRoutes(r *mux.Router) {
 		var noteID = vars["note"]
 
 		if user.Authenticated {
+			// Update action
 			if r.FormValue("update") != "" {
-				err := notes.UpdateNote(w, r, noteID)
+				err := notes.UpdateNote(noteID, r.FormValue("note"))
 				if err == nil {
 					redirectToHome(w, r)
+				} else {
+					log.Println(err.Error())
 				}
+
 			} else if r.FormValue("delete") != "" {
-				err := notes.DeleteNote(w, r, noteID)
+				// Delete action
+				err := notes.DeleteNote(noteID)
 				if err == nil {
 					redirectToHome(w, r)
+				} else {
+					log.Println(err.Error())
 				}
+
 			} else if r.FormValue("back") != "" {
+				// Back action
 				redirectToHome(w, r)
+
 			} else {
+				// Read action
 				tmpl := template.Must(template.ParseFiles(viewNotePage))
-				note, _ := notes.ReadNote(w, r, noteID)
-				tmpl.Execute(w, note)
+				note, err := notes.ReadNote(noteID)
+				if err != nil {
+					log.Println(err.Error())
+				} else {
+					tmpl.Execute(w, note)
+
+					// Update the note's view count
+					err = notes.UpdateNoteView(noteID)
+					if err != nil {
+						log.Println(err.Error())
+					}
+				}
 			}
 		} else {
 			redirectToHome(w, r)
@@ -245,6 +281,7 @@ func setupRoutes(r *mux.Router) {
 }
 
 func main() {
+
 	// Session Cookies
 	cookies = sessions.NewCookieStore([]byte("mysuperdupersecret"))
 	cookies.Options = &sessions.Options{
@@ -253,8 +290,13 @@ func main() {
 	}
 	gob.Register(LoggedInUser{})
 
-	r := mux.NewRouter()
+	// set variables from command-line
 
+	// parameterizing the DB allows different note repositories to be used. Ex. Dev, Test, Prod
+	flag.StringVar(&notes.DDBTable, "db", "Project-NoteTaker-Demo", "dynamoDB table to access")
+
+	// setup HTTP routing
+	r := mux.NewRouter()
 	setupRoutes(r)
 	http.ListenAndServe(":80", r)
 }

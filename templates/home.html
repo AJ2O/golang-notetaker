@@ -16,7 +16,9 @@
             {{range .Notes}}
                 <div onclick="viewNote('{{.NoteID}}')">
                     <h3>Note</h3>
-                    <li>{{.Message}}</li>
+                    Modified Date: {{.LastModifiedDate}}
+                    <li>{{.Content}}</li>
+                    Views: {{.Views}}
                 </div>
             {{end}}
         </ul>

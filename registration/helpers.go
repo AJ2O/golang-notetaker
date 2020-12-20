@@ -13,6 +13,7 @@ var tempUserList = []User{
 	{Username: "user", Password: "pass"},
 	{Username: "username", Password: "password"},
 	{Username: "abc", Password: "123"},
+	{Username: "test", Password: "test"},
 }
 
 func isUsernameTaken(userID string) bool {
