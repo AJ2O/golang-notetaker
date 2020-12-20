@@ -293,7 +293,7 @@ func main() {
 	// set variables from command-line
 
 	// parameterizing the DB allows different note repositories to be used. Ex. Dev, Test, Prod
-	flag.StringVar(&notes.DDBTable, "db", "Project-NoteTaker-Demo", "dynamoDB table to access")
+	flag.StringVar(&notes.DDBTable, "db", "<dynamoDB-table>", "dynamoDB table to access")
 
 	// setup HTTP routing
 	r := mux.NewRouter()
