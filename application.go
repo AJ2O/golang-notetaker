@@ -298,5 +298,5 @@ func main() {
 	// setup HTTP routing
 	r := mux.NewRouter()
 	setupRoutes(r)
-	http.ListenAndServe(":80", r)
+	http.ListenAndServe(":5000", r)
 }
