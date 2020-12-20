@@ -36,9 +36,9 @@ var ddb *dynamodb.DynamoDB
 var DDBTable string
 
 func init() {
-	awsSession = session.Must(session.NewSessionWithOptions(session.Options{
-		SharedConfigState: session.SharedConfigEnable,
-	}))
+	awsSession, _ = session.NewSession(&aws.Config{
+		Region: aws.String("us-east-1"),
+	})
 	ddb = dynamodb.New(awsSession)
 	log.Println("DynamoDB session started")
 }
