@@ -1,0 +1,13 @@
+<html>
+    <head></head>
+    <body>
+        <h1>Create New Note</h1>
+        <form method="POST">
+            <label>Edit Note: </label><br />
+            <textarea name="note" rows="8" cols="48" placeholder="New note...">{{ .Message}}</textarea><br /><br />
+            <input type="submit" name="update" value="Update">
+            <input type="submit"name="delete" value="Delete">
+            <input type="submit"name="back" value="Back">
+        </form>
+    </body>
+</html>

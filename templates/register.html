@@ -1,0 +1,17 @@
+<html>
+    <head></head>
+    <body>
+        <h1>Registration</h1>
+        {{if .Fail}}
+            <h2 style="color:red;">{{ .Message}}</h2>
+        {{else}}{{end}}
+        <form method="POST">
+            <label>Username: </label>
+            <input type="text" name="username"><br /><br />
+            <label>Password: </label>
+            <input type="password" name="password"><br /><br />
+            <input type="submit" name="register" value="Register">
+            <input type="submit" name="back" value="Back">
+        </form>
+    </body>
+</html>

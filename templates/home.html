@@ -1,0 +1,24 @@
+<html>
+    <head></head>
+    <script>
+        function viewNote(noteID) {
+            window.location.href = "/read/" + noteID
+        }
+    </script>
+    <body>
+        <h1>Notes</h1>
+        <h3>Click on a note to edit it.</h3>
+        <form method="POST">
+            <input type="submit" name="logout" value="Logout">
+            <input type="submit" name="createnote" value="Create New Note...">
+        </form>
+        <ul>
+            {{range .Notes}}
+                <div onclick="viewNote('{{.NoteID}}')">
+                    <h3>Note</h3>
+                    <li>{{.Message}}</li>
+                </div>
+            {{end}}
+        </ul>
+    </body>
+</html>
