@@ -18,7 +18,6 @@ phases:
   # the pre_build phase runs before the build
   # Here, we authenticate to the ECR repository
   pre_build:
-    run-as: Linux-user-name
     commands:
       - echo Logging in to Amazon ECR... 
       - aws --version
