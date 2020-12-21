@@ -1,0 +1,45 @@
+# As of this writing, AWS recommends using version 0.2 for buildspec files
+version: 0.2
+
+# CodeBuild runs in sequenced phases
+# In each phase, you specify the commands to run for it
+# If commands in a phase fail, some
+phases:
+
+  # AWS recommends using the install phase only for installing packages in the build environment
+  # Here we initialize the Docker daemon on the host
+  install:
+    runtime-versions:
+        docker: 18     
+    commands: 
+      - nohup /usr/local/bin/dockerd --host=unix:///var/run/docker.sock --host=tcp://127.0.0.1:2375 --storage-driver=overlay2&
+      - timeout 15 sh -c "until docker info; do echo .; sleep 1; done"
+
+  # the pre_build phase runs before the build
+  # Here, we authenticate to the ECR repository
+  pre_build:
+    run-as: Linux-user-name
+    commands:
+      - echo Logging in to Amazon ECR... 
+      - aws --version
+      - $(aws ecr get-login --no-include-email --region us-east-1)
+  
+  # the build phase runs during the build
+  # Here we build the Docker image and tag it
+  build:
+    commands:
+      - echo Build started on `date` 
+      - echo Building the Docker image... 
+      # update the following line with the name of your own ECR repository
+      - docker build -t <image-name>:latest . 
+      # update the following line with the URI of your own ECR repository (view the Push Commands in the console)
+      - docker tag <image-name>:latest:latest <repo>:latest
+  
+  # the post_build phase runs after the build
+  # Here we push the image to ECR
+  post_build:
+    commands:
+      - echo Build completed on `date` 
+      - echo pushing to repo
+      # update the following line with the URI of your own ECR repository
+      - docker push <repo>:latest
